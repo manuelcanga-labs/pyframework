@@ -47,31 +47,31 @@ class TestPyFramework(unittest.TestCase):
     def test_load_controller_returns_handler_result(self):
         """Test that load_controller returns handler result."""
         from pyframework.http_foundation.responses import Response
+        from pyframework.http_foundation.requests import Request
         app = PyFramework()
         app._routes = [{"endpoint": "/", "controller": "test.controller"}]
-        start_response = MagicMock()
-        
+
         mock_response = Response("result")
-        
-        with patch.object(app._resolver, "resolve_handler", return_value=lambda e: mock_response):
-            result = app.load_controller({"PATH_INFO": "/"}, start_response)
-            self.assertEqual(result, [b"result"])
+        request = Request({"PATH_INFO": "/", "REQUEST_METHOD": "GET"})
+
+        with patch.object(app._resolver, "resolve_handler", return_value=lambda r: mock_response):
+            result = app.load_controller(request)
+            self.assertEqual(result, mock_response)
 
     def test_load_controller_sets_response_headers(self):
         """Test that load_controller sets correct response headers."""
         from pyframework.http_foundation.responses import Response
+        from pyframework.http_foundation.requests import Request
         app = PyFramework()
         app._routes = [{"endpoint": "/", "controller": "test.controller"}]
-        start_response = MagicMock()
-        
+
         mock_response = Response("response")
-        
-        with patch.object(app._resolver, "resolve_handler", return_value=lambda e: mock_response):
-            result = app.load_controller({"PATH_INFO": "/"}, start_response)
-            start_response.assert_called_once_with(
-                "200 OK", [("Content-Type", "text/html")]
-            )
-            self.assertEqual(result, [b"response"])
+        request = Request({"PATH_INFO": "/", "REQUEST_METHOD": "GET"})
+
+        with patch.object(app._resolver, "resolve_handler", return_value=lambda r: mock_response):
+            result = app.load_controller(request)
+            self.assertIsInstance(result, Response)
+            self.assertEqual(result._body, "response")
 
     @patch("pyframework.pyframework.Server")
     def test_load_creates_and_starts_server(self, mock_server):
@@ -83,4 +83,4 @@ class TestPyFramework(unittest.TestCase):
         app.load()
 
         mock_server.assert_called_once()
-        mock_server_instance.up.assert_called_once_with(app.load_controller)
+        mock_server_instance.up.assert_called_once_with(app.response_to_server)
