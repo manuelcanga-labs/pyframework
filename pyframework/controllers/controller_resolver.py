@@ -1,8 +1,14 @@
+"""Controller resolver module."""
+
 import importlib
 
 
 class ControllerResolver:
     """Resolves HTTP handlers from routes."""
+
+    def __init__(self) -> None:
+        """Initializes the ControllerResolver."""
+        self._current_route: dict[str, str] | None = None
 
     def resolve_handler(
         self,
@@ -36,16 +42,26 @@ class ControllerResolver:
             controller_class = self._get_controller_class(controller_path)
 
             if controller_class and hasattr(controller_class, method):
+                self._current_route = route
                 return getattr(controller_class(), method)
 
-            raise ValueError(
-                f"No handler found for controller_path: {controller_path}"
-            )
+            raise ValueError(f"No handler found for controller_path: {controller_path}")
 
         return None
 
+    @property
+    def current_route(self) -> dict[str, str]:
+        """Returns the current matched route.
+
+        Raises:
+            ValueError: If no route has been matched.
+        """
+        if self._current_route is None:
+            raise ValueError("No route has been matched")
+        return self._current_route
+
     def _get_controller_class(self, controller_path: str):
-        """ Gets the controller class from the module path.
+        """Gets the controller class from the module path.
 
         Args:
             controller_path: Dot-separated path to the controller module.
