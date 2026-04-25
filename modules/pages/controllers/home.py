@@ -1,3 +1,6 @@
+from pyframework.responses import Response
+
+
 class Home:
     def get(self, environ):
-        return b"Hola mundo"
+        return Response("Hola mundo")

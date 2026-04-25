@@ -3,6 +3,9 @@ import importlib
 from pathlib import Path
 
 from pyframework.server import Server
+from pyframework.responses import Response
+from pyframework.responses.base_response import BaseResponse
+from pyframework.status import HTTP_404_NOT_FOUND
 
 
 class PyFramework:
@@ -76,14 +79,37 @@ class PyFramework:
                 if not controller_path:
                     endpoint = route.get("endpoint")
                     raise ValueError(f"No controller associated with route: {endpoint}")
-                handler = self._get_controller(controller_path, method)
-                start_response("200 OK", [("Content-Type", "text/html")])
-                return [handler(environ)]
+                handler = self._extract_controller(controller_path, method)
+                response = handler(environ)
+                return self._build_http_response(response, start_response)
 
-        start_response("404 Not Found", [("Content-Type", "text/plain")])
-        return [b"Not Found"]
+        not_found_response = Response("Not Found", HTTP_404_NOT_FOUND)
+        return self._build_http_response(not_found_response, start_response)
 
-    def _get_controller(
+    def _build_http_response(
+        self,
+        response: BaseResponse,
+        start_response: Callable[[str, list[tuple[str, str]]], None],
+    ) -> list[bytes]:
+        """Builds the HTTP response from a BaseResponse object.
+
+        Args:
+            response: BaseResponse object containing the response data.
+            start_response: WSGI callback to set response status and headers.
+
+        Returns:
+            List containing response body as bytes.
+        """
+        from pyframework.status import HTTP_MESSAGES
+        
+        status_text = HTTP_MESSAGES.get(response.status, "Unknown")
+        start_response(f"{response.status} {status_text}", list(response.headers.items()))
+
+        if isinstance(response.body, bytes):
+            return [response.body]
+        return [response.body.encode("utf-8")]
+
+    def _extract_controller(
         self,
         controller_path: str,
         method: str,

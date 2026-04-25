@@ -54,24 +54,30 @@ class TestPyFramework(unittest.TestCase):
 
     def test_load_controller_returns_handler_result(self):
         """Test that load_controller returns handler result."""
+        from pyframework.responses import Response
         app = PyFramework()
         app._routes = [{"endpoint": "/", "controller": "test.controller"}]
         start_response = MagicMock()
         
-        with patch.object(app, "_get_controller", return_value=lambda e: b"result"):
+        mock_response = Response("result")
+        
+        with patch.object(app, "_extract_controller", return_value=lambda e: mock_response):
             result = app.load_controller({"PATH_INFO": "/"}, start_response)
             self.assertEqual(result, [b"result"])
 
     def test_load_controller_sets_response_headers(self):
         """Test that load_controller sets correct response headers."""
+        from pyframework.responses import Response
         app = PyFramework()
         app._routes = [{"endpoint": "/", "controller": "test.controller"}]
         start_response = MagicMock()
         
-        def mock_get(controller_path, method):
-            return lambda e: b"response"
+        mock_response = Response("response")
         
-        with patch.object(app, "_get_controller", side_effect=mock_get):
+        def mock_get(controller_path, method):
+            return lambda e: mock_response
+        
+        with patch.object(app, "_extract_controller", side_effect=mock_get):
             result = app.load_controller({"PATH_INFO": "/"}, start_response)
             start_response.assert_called_once_with(
                 "200 OK", [("Content-Type", "text/html")]
