@@ -1,6 +1,10 @@
 # PyFramework
 
-A lightweight web framework built with Python for learning purposes.
+A lightweight Python web framework inspired by Symfony and Flask, built for learning purposes.
+
+## Requirements
+
+- Python 3.12+
 
 ## Installation
 
@@ -12,24 +16,73 @@ No external dependencies required (uses Python's built-in `wsgiref`).
 from pyframework import PyFramework
 
 app = PyFramework()
-app.bootstrap()
 app.load()
 ```
 
-Then open http://localhost:8000 in your browser.
+Then open http://localhost:8080 in your browser.
 
 ## Structure
 
 ```
 pyframework/
-├── pyframework/       # Core framework
-│   ├── server.py
-│   └── pyframework.py
-├── config/           # Application configuration
-│   └── routes.py
-└── app.py           # Application entry point
+├── pyframework/
+│   ├── pyframework.py          # Core framework class
+│   ├── controller_resolver.py   # Resolves controllers from routes
+│   ├── status.py               # HTTP status constants
+│   └── http_foundation/
+│       ├── server.py           # WSGI server wrapper
+│       ├── http_response_builder.py
+│       ├── requests/
+│       │   └── request.py      # Request class (path, method, query, form)
+│       └── responses/
+│           ├── base_response.py
+│           ├── response.py     # Text response
+│           └── response_json.py # JSON response
+config/
+├── routes.py                   # Application routes
+modules/
+└── pages/controllers/          # Application controllers
+    ├── home/
+    └── about/
+tests/
+├── http_foundation/
+│   ├── test_http_response_builder.py
+│   ├── test_request.py
+│   └── test_server.py
+├── controllers/
+│   └── test_controller_resolver.py
+└── test_pyframework.py
 ```
 
-## Requirements
+## Request
 
-- Python 3.12+
+The `Request` class provides:
+
+- `request.path` - Request path (PATH_INFO)
+- `request.method` - HTTP method (GET, POST, etc.)
+- `request.query` - Query string parameters
+- `request.form` - Form data (application/x-www-form-urlencoded)
+
+## Responses
+
+- `Response(body, status)` - Text response
+- `ResponseJson(data)` - JSON response
+
+## Routes
+
+Routes are defined in `config/routes.py`:
+
+```python
+routes = [
+    {"endpoint": "/", "controller": "modules.pages.controllers.home"},
+    {"endpoint": "/about", "controller": "modules.pages.controllers.about"},
+]
+```
+
+## Author
+
+- **Manuel Canga** - [GitHub](https://github.com/manuelcanga-labs/pyframework)
+
+## License
+
+MIT

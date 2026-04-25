@@ -1,3 +1,10 @@
-.venv
-__pycache__
-.idea
+.venv/
+.idea/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+*.egg-info/
+dist/
+build/
+.DS_Store
