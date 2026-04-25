@@ -1,11 +1,11 @@
 from collections.abc import Callable
-import importlib
 from pathlib import Path
 
-from pyframework.server import Server
-from pyframework.responses import Response
-from pyframework.responses.base_response import BaseResponse
+from pyframework.http_foundation.server import Server
+from pyframework.http_foundation.responses import Response
 from pyframework.status import HTTP_404_NOT_FOUND
+from pyframework.controllers import ControllerResolver
+from pyframework.http_foundation.http_response_builder import HttpResponseBuilder
 
 
 class PyFramework:
@@ -23,30 +23,43 @@ class PyFramework:
             config_dir: Path to the config directory. If not provided,
                 defaults to "config" relative to the working directory.
         """
+        self._routes: list[dict[str, str]] = []
+        self._resolver = ControllerResolver()
+        self.response_builder = HttpResponseBuilder()
+
+        self.set_config_dir(config_dir)
+        self._routes = self.find_routes()
+
+    def set_config_dir(self, config_dir: str | None = None) -> None:
+        """Sets the configuration directory.
+
+        Args:
+            config_dir: Path to the config directory. If not provided,
+                defaults to "config" relative to the working directory.
+        """
         if config_dir:
             self.config_dir = Path(config_dir)
         else:
             self.config_dir = Path("config")
 
-        self._routes: list[dict[str, str]] = []
-
-        self.bootstrap()
+        routes_file = self.config_dir / "routes.py"
+        if not routes_file.exists():
+            raise FileNotFoundError(f"Routes file not found: {routes_file}")
 
     @property
     def routes(self) -> list[dict[str, str]]:
         """Returns the loaded routes."""
         return self._routes
 
-    def bootstrap(self) -> None:
-        """Loads the routes configuration from the config directory.
+    def find_routes(self) -> list[dict[str, str]]:
+        """Loads and returns routes from the configuration directory.
+
+        Returns:
+            List of route definitions.
 
         Raises:
-            FileNotFoundError: If routes.py file does not exist in config directory.
+            ImportError: If routes module cannot be imported.
         """
-        routes_file = self.config_dir / "routes.py"
-        if not routes_file.exists():
-            raise FileNotFoundError(f"Routes file not found: {routes_file}")
-
         import sys
 
         sys.path.insert(0, str(self.config_dir.parent))
@@ -54,7 +67,7 @@ class PyFramework:
 
         from config.routes import routes
 
-        self._routes = routes
+        return routes
 
     def load_controller(
         self,
@@ -73,67 +86,14 @@ class PyFramework:
         path = environ.get("PATH_INFO", "/")
         method = environ.get("REQUEST_METHOD", "GET").lower()
 
-        for route in self._routes:
-            if route.get("endpoint") == path:
-                controller_path = route.get("controller")
-                if not controller_path:
-                    endpoint = route.get("endpoint")
-                    raise ValueError(f"No controller associated with route: {endpoint}")
-                handler = self._extract_controller(controller_path, method)
-                response = handler(environ)
-                return self._build_http_response(response, start_response)
-
-        not_found_response = Response("Not Found", HTTP_404_NOT_FOUND)
-        return self._build_http_response(not_found_response, start_response)
-
-    def _build_http_response(
-        self,
-        response: BaseResponse,
-        start_response: Callable[[str, list[tuple[str, str]]], None],
-    ) -> list[bytes]:
-        """Builds the HTTP response from a BaseResponse object.
-
-        Args:
-            response: BaseResponse object containing the response data.
-            start_response: WSGI callback to set response status and headers.
-
-        Returns:
-            List containing response body as bytes.
-        """
-        from pyframework.status import HTTP_MESSAGES
+        handler = self._resolver.resolve_handler(path, method, self._routes)
         
-        status_text = HTTP_MESSAGES.get(response.status, "Unknown")
-        start_response(f"{response.status} {status_text}", list(response.headers.items()))
+        response = Response("Not Found", HTTP_404_NOT_FOUND)
+        
+        if handler:
+            response = handler(environ)
 
-        if isinstance(response.body, bytes):
-            return [response.body]
-        return [response.body.encode("utf-8")]
-
-    def _extract_controller(
-        self,
-        controller_path: str,
-        method: str,
-    ) -> Callable[[dict[str, str]], bytes]:
-        """Gets the controller method handler.
-
-        Args:
-            controller_path: Dot-separated path to the controller module.
-            method: HTTP method name to execute.
-
-        Returns:
-            Controller method handler callable.
-        """
-        module = importlib.import_module(controller_path)
-
-        parts = controller_path.split(".")[-1].split("_")
-        class_name = "".join(part.capitalize() for part in parts)
-        controller_class = getattr(module, class_name, None)
-
-        if controller_class and hasattr(controller_class, method):
-            return getattr(controller_class(), method)
-
-
-        raise ValueError(f"No controller associated with controller_path: {controller_path}")
+        return self.response_builder.build(response, start_response)
 
     def load(self) -> None:
         """Starts the HTTP server.

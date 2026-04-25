@@ -1,5 +1,5 @@
 import unittest
-from pyframework.server import Server
+from pyframework.http_foundation.server import Server
 
 
 class TestServer(unittest.TestCase):

@@ -1,5 +1,5 @@
 import json
-from pyframework.responses.base_response import BaseResponse
+from pyframework.http_foundation.responses.base_response import BaseResponse
 
 
 class ResponseJson(BaseResponse):

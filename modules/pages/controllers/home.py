@@ -1,4 +1,4 @@
-from pyframework.responses import Response
+from pyframework.http_foundation.responses import Response
 
 
 class Home:
