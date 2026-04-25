@@ -1,4 +1,8 @@
+"""Base response module."""
+
 from abc import ABC
+
+from ..status import HTTP_MESSAGES
 
 
 class BaseResponse(ABC):
@@ -11,9 +15,9 @@ class BaseResponse(ABC):
         self._headers = {}
 
     @property
-    def body(self):
-        """Returns the response body content."""
-        return self._body
+    def body(self) -> list[bytes]:
+        """Returns the response body as bytes list."""
+        return [self._body if isinstance(self._body, bytes) else self._body.encode("utf-8")]
 
     @property
     def status(self) -> int:
@@ -24,3 +28,8 @@ class BaseResponse(ABC):
     def headers(self) -> dict[str, str]:
         """Returns the response headers."""
         return self._headers
+
+    @property
+    def status_msg(self) -> str:
+        """Returns the HTTP status message."""
+        return HTTP_MESSAGES.get(self.status, "Unknown")

@@ -1,3 +1,5 @@
+"""HTTP server module."""
+
 from collections.abc import Callable
 from wsgiref.simple_server import make_server
 
@@ -17,8 +19,8 @@ class Server:
             host: Host address to bind to. Defaults to "127.0.0.1".
             port: Port number to listen on. Defaults to 8000.
         """
-        self.host = host
-        self.port = port
+        self._host = host
+        self._port = port
 
     def up(self, callback: Callable) -> None:
         """Starts the HTTP server and serves forever.
@@ -26,6 +28,14 @@ class Server:
         Args:
             callback: WSGI callable to handle requests.
         """
-        server = make_server(self.host, self.port, callback)
-        print(f"Serving on http://{self.host}:{self.port}")
+        server = make_server(self._host, self._port, callback)
+        print(f"Serving on http://{self._host}:{self._port}")
         server.serve_forever()
+
+    def info(self) -> dict[str, str | int]:
+        """Returns server information.
+
+        Returns:
+            Dictionary with host and port information.
+        """
+        return {"host": self._host, "port": self._port}

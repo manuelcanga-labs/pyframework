@@ -1,1 +1,1 @@
-from pyframework.http_foundation.http_response_builder import HttpResponseBuilder
+"""HTTP Foundation module."""

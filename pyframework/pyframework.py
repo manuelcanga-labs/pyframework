@@ -1,12 +1,13 @@
+"""PyFramework core module."""
+
 from collections.abc import Callable
 from pathlib import Path
 
 from .http_foundation.server import Server
 from .http_foundation.responses import Response
 from .http_foundation.requests import Request
-from .status import HTTP_404_NOT_FOUND
+from .http_foundation.status import HTTP_404_NOT_FOUND
 from .controllers import ControllerResolver
-from .http_foundation.http_response_builder import HttpResponseBuilder
 
 
 class PyFramework:
@@ -17,35 +18,35 @@ class PyFramework:
         routes: List of route definitions loaded from config.
     """
 
-    def __init__(self, config_dir: str | None = None) -> None:
+    def __init__(self, main_script: str, config_dir: str | None = None) -> None:
         """Initializes the PyFramework instance.
 
         Args:
-            config_dir: Path to the config directory. If not provided,
-                defaults to "config" relative to the working directory.
+            main_script: Path to the main script (usually __file__).
+            config_dir: Path to the config directory.
         """
         self._routes: list[dict[str, str]] = []
         self._resolver = ControllerResolver()
-        self.response_builder = HttpResponseBuilder()
+        self._base_url = Path(main_script).parent
 
         self.set_config_dir(config_dir)
         self._routes = self.find_routes()
+
+    @property
+    def base_url(self) -> Path:
+        """Returns the base URL (directory of the main script)."""
+        return self._base_url
 
     def set_config_dir(self, config_dir: str | None = None) -> None:
         """Sets the configuration directory.
 
         Args:
-            config_dir: Path to the config directory. If not provided,
-                defaults to "config" relative to the working directory.
+            config_dir: Path to the config directory.
         """
         if config_dir:
             self.config_dir = Path(config_dir)
         else:
-            self.config_dir = Path("config")
-
-        routes_file = self.config_dir / "routes.py"
-        if not routes_file.exists():
-            raise FileNotFoundError(f"Routes file not found: {routes_file}")
+            self.config_dir = self.base_url / "config"
 
     @property
     def routes(self) -> list[dict[str, str]]:
@@ -61,32 +62,22 @@ class PyFramework:
         Raises:
             ImportError: If routes module cannot be imported.
         """
+        import importlib.util
         import sys
 
-        sys.path.insert(0, str(self.config_dir.parent))
+        routes_file = self.config_dir / "routes.py"
+        if not routes_file.exists():
+            raise FileNotFoundError(f"Routes file not found: {routes_file}")
+
         sys.path.insert(0, "modules")
 
-        from config.routes import routes
+        spec = importlib.util.spec_from_file_location("routes", routes_file)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
 
-        return routes
+        return module.routes
 
-    def load_controller(
-        self,
-        request: Request,
-    ) -> Response:
-        """Handles incoming HTTP requests and dispatches to appropriate controller.
-
-        Args:
-            request: Request object containing environ data.
-
-        Returns:
-            Response object.
-        """
-        handler = self._resolver.resolve_handler(request.path, request.method.lower(), self._routes)
-
-        return handler(request) if handler else Response("Not Found", HTTP_404_NOT_FOUND)
-
-    def response_to_server(
+    def handle_server_request(
         self,
         environ: dict[str, str],
         start_response: Callable[[str, list[tuple[str, str]]], None],
@@ -101,8 +92,18 @@ class PyFramework:
             Response body as bytes list.
         """
         request = Request(environ)
-        response = self.load_controller(request)
-        return self.response_builder.build(response, start_response)
+        handler = self._resolver.resolve_handler(
+            request.path, request.method.lower(), self._routes
+        )
+
+        response = Response("Not Found", HTTP_404_NOT_FOUND)
+        if handler:
+            response = handler(request)
+
+        start_response(
+            f"{response.status} {response.status_msg}", list(response.headers.items())
+        )
+        return response.body
 
     def load(self) -> None:
         """Starts the HTTP server.
@@ -110,4 +111,4 @@ class PyFramework:
         Creates a Server instance and starts serving forever.
         """
         server = Server()
-        server.up(self.response_to_server)
+        server.up(self.handle_server_request)

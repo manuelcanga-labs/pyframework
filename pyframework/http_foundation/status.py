@@ -1,3 +1,5 @@
+"""HTTP status codes module."""
+
 HTTP_100_CONTINUE = 100
 HTTP_101_SWITCHING_PROTOCOLS = 101
 
@@ -48,7 +50,6 @@ HTTP_505_HTTP_VERSION_NOT_SUPPORTED = 505
 HTTP_MESSAGES = {
     100: "Continue",
     101: "Switching Protocols",
-
     200: "OK",
     201: "Created",
     202: "Accepted",
@@ -56,7 +57,6 @@ HTTP_MESSAGES = {
     204: "No Content",
     205: "Reset Content",
     206: "Partial Content",
-
     300: "Multiple Choices",
     301: "Moved Permanently",
     302: "Found",
@@ -65,7 +65,6 @@ HTTP_MESSAGES = {
     305: "Use Proxy",
     306: "Reserved",
     307: "Temporary Redirect",
-
     400: "Bad Request",
     401: "Unauthorized",
     402: "Payment Required",
@@ -84,7 +83,6 @@ HTTP_MESSAGES = {
     415: "Unsupported Media Type",
     416: "Requested Range Not Satisfiable",
     417: "Expectation Failed",
-
     500: "Internal Server Error",
     501: "Not Implemented",
     502: "Bad Gateway",

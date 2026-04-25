@@ -1,3 +1,5 @@
+"""HTTP response module."""
+
 from pyframework.http_foundation.responses.base_response import BaseResponse
 
 
@@ -9,7 +11,12 @@ class Response(BaseResponse):
         status: HTTP status code. Defaults to 200.
     """
 
-    def __init__(self, content: str | bytes = "", status: int = 200, headers: dict[str, str] = None) -> None:
+    def __init__(
+        self,
+        content: str | bytes = "",
+        status: int = 200,
+        headers: dict[str, str] | None = None,
+    ) -> None:
         """Initializes the Response.
 
         Args:
@@ -21,4 +28,4 @@ class Response(BaseResponse):
         self._body = content
         self._status = status
         self._headers.update(headers or {})
-        self._headers.update({"Content-Type": "text/html"})
+        self._headers["Content-Type"] = "text/html"

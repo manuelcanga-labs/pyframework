@@ -1,4 +1,7 @@
+"""HTTP request module."""
+
 from urllib.parse import parse_qs
+
 
 class Request:
     """Represents an HTTP request.
@@ -54,18 +57,3 @@ class Request:
         """
         query_string = self.get("QUERY_STRING", "")
         return parse_qs(query_string)
-
-    @property
-    def form(self) -> dict[str, list[str]]:
-        """Get the form data.
-
-        Returns:
-            Dictionary of form parameters (values are lists).
-        """
-        content_type = self.get("CONTENT_TYPE", "")
-        if "application/x-www-form-urlencoded" in content_type:
-            wsgi_input = self.environ.get("wsgi.input")
-            if wsgi_input:
-                body = wsgi_input.read().decode("utf-8")
-                return parse_qs(body)
-        return {}

@@ -1,3 +1,5 @@
+"""JSON response module."""
+
 import json
 from pyframework.http_foundation.responses.base_response import BaseResponse
 
@@ -10,7 +12,9 @@ class ResponseJson(BaseResponse):
         status_code: HTTP status code. Defaults to 200.
     """
 
-    def __init__(self, data: dict, status_code: int = 200, headers: dict[str, str] = None) -> None:
+    def __init__(
+        self, data: dict, status_code: int = 200, headers: dict[str, str] = None
+    ) -> None:
         """Initializes the ResponseJson.
 
         Args:
