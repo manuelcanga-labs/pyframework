@@ -18,7 +18,10 @@ class TestControllerResolver(unittest.TestCase):
         with patch("importlib.import_module", return_value=mock_class):
             handler = resolver.resolve_handler("/", "get", routes)
             self.assertIsNotNone(handler)
-            self.assertEqual(resolver.current_route, {"endpoint": "/", "controller": "test.controller"})
+            self.assertEqual(
+                resolver.current_route,
+                {"endpoint": "/", "controller": "test.controller"},
+            )
 
     def test_resolve_handler_returns_none_when_not_found(self):
         """Test that resolve_handler returns None when route not found."""

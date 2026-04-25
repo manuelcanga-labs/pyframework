@@ -43,7 +43,9 @@ class TestPyFramework(unittest.TestCase):
             with patch.object(PyFramework, "find_routes", return_value=[]):
                 app = PyFramework(__file__)
                 app._routes = [{"endpoint": "/test", "controller": "test"}]
-                self.assertEqual(app.routes, [{"endpoint": "/test", "controller": "test"}])
+                self.assertEqual(
+                    app.routes, [{"endpoint": "/test", "controller": "test"}]
+                )
 
     def test_handle_server_request_returns_handler_result(self):
         """Test that handle_server_request returns handler result."""
@@ -58,7 +60,9 @@ class TestPyFramework(unittest.TestCase):
                 start_response = MagicMock()
 
                 with patch.object(
-                    app._resolver, "resolve_handler", return_value=lambda r: mock_response
+                    app._resolver,
+                    "resolve_handler",
+                    return_value=lambda r: mock_response,
                 ):
                     result = app.handle_server_request(
                         {"PATH_INFO": "/", "REQUEST_METHOD": "GET"}, start_response
@@ -78,7 +82,9 @@ class TestPyFramework(unittest.TestCase):
                 start_response = MagicMock()
 
                 with patch.object(
-                    app._resolver, "resolve_handler", return_value=lambda r: mock_response
+                    app._resolver,
+                    "resolve_handler",
+                    return_value=lambda r: mock_response,
                 ):
                     result = app.handle_server_request(
                         {"PATH_INFO": "/", "REQUEST_METHOD": "GET"}, start_response
@@ -100,4 +106,6 @@ class TestPyFramework(unittest.TestCase):
                 app.load()
 
                 mock_server.assert_called_once()
-                mock_server_instance.up.assert_called_once_with(app.handle_server_request)
+                mock_server_instance.up.assert_called_once_with(
+                    app.handle_server_request
+                )

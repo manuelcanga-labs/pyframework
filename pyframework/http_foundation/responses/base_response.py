@@ -17,7 +17,9 @@ class BaseResponse(ABC):
     @property
     def body(self) -> list[bytes]:
         """Returns the response body as bytes list."""
-        return [self._body if isinstance(self._body, bytes) else self._body.encode("utf-8")]
+        return [
+            self._body if isinstance(self._body, bytes) else self._body.encode("utf-8")
+        ]
 
     @property
     def status(self) -> int:
