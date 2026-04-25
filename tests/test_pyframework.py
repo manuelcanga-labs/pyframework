@@ -52,21 +52,31 @@ class TestPyFramework(unittest.TestCase):
         app._routes = [{"endpoint": "/test", "controller": "test"}]
         self.assertEqual(app.routes, [{"endpoint": "/test", "controller": "test"}])
 
-    def test_run_controller_returns_hello_world(self):
-        """Test that run_controller returns 'Hola mundo'."""
+    def test_load_controller_returns_handler_result(self):
+        """Test that load_controller returns handler result."""
         app = PyFramework()
+        app._routes = [{"endpoint": "/", "controller": "test.controller"}]
         start_response = MagicMock()
-        result = app.run_controller({}, start_response)
-        self.assertEqual(result, [b"Hola mundo"])
+        
+        with patch.object(app, "_get_controller", return_value=lambda e: b"result"):
+            result = app.load_controller({"PATH_INFO": "/"}, start_response)
+            self.assertEqual(result, [b"result"])
 
-    def test_run_controller_sets_response_headers(self):
-        """Test that run_controller sets correct response headers."""
+    def test_load_controller_sets_response_headers(self):
+        """Test that load_controller sets correct response headers."""
         app = PyFramework()
+        app._routes = [{"endpoint": "/", "controller": "test.controller"}]
         start_response = MagicMock()
-        app.run_controller({}, start_response)
-        start_response.assert_called_once_with(
-            "200 OK", [("Content-Type", "text/html")]
-        )
+        
+        def mock_get(controller_path, method):
+            return lambda e: b"response"
+        
+        with patch.object(app, "_get_controller", side_effect=mock_get):
+            result = app.load_controller({"PATH_INFO": "/"}, start_response)
+            start_response.assert_called_once_with(
+                "200 OK", [("Content-Type", "text/html")]
+            )
+            self.assertEqual(result, [b"response"])
 
     @patch("pyframework.pyframework.Server")
     def test_load_creates_and_starts_server(self, mock_server):
@@ -78,4 +88,4 @@ class TestPyFramework(unittest.TestCase):
         app.load()
 
         mock_server.assert_called_once()
-        mock_server_instance.up.assert_called_once_with(app.run_controller)
+        mock_server_instance.up.assert_called_once_with(app.load_controller)

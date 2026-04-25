@@ -1,10 +1,10 @@
 routes = [
     {
         "endpoint": "/",
-        "controller": "pages.controllers.home_page"
+        "controller": "modules.pages.controllers.home"
     },
     {
         "endpoint": "/about",
-        "controller": "pages.controllers.about_page"
+        "controller": "modules.pages.controllers.about"
     },
 ]

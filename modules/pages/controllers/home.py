@@ -1,3 +1,3 @@
 class Home:
-    def get():
-        return "HOLA MUDNO";
+    def get(self, environ):
+        return b"Hola mundo"

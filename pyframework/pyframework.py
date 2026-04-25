@@ -1,4 +1,5 @@
 from collections.abc import Callable
+import importlib
 from pathlib import Path
 
 from pyframework.server import Server
@@ -46,16 +47,17 @@ class PyFramework:
         import sys
 
         sys.path.insert(0, str(self.config_dir.parent))
+        sys.path.insert(0, "modules")
 
         from config.routes import routes
 
         self._routes = routes
 
-    def run_controller(
+    def load_controller(
         self,
         environ: dict[str, str],
         start_response: Callable[[str, list[tuple[str, str]]], None],
-    ) -> list[bytes]:
+    ) -> bytes:
         """Handles incoming HTTP requests and dispatches to appropriate controller.
 
         Args:
@@ -63,10 +65,49 @@ class PyFramework:
             start_response: WSGI callback to set response status and headers.
 
         Returns:
-            List containing response body as bytes.
+            Response body as bytes.
         """
-        start_response("200 OK", [("Content-Type", "text/html")])
-        return [b"Hola mundo"]
+        path = environ.get("PATH_INFO", "/")
+        method = environ.get("REQUEST_METHOD", "GET").lower()
+
+        for route in self._routes:
+            if route.get("endpoint") == path:
+                controller_path = route.get("controller")
+                if not controller_path:
+                    endpoint = route.get("endpoint")
+                    raise ValueError(f"No controller associated with route: {endpoint}")
+                handler = self._get_controller(controller_path, method)
+                start_response("200 OK", [("Content-Type", "text/html")])
+                return [handler(environ)]
+
+        start_response("404 Not Found", [("Content-Type", "text/plain")])
+        return [b"Not Found"]
+
+    def _get_controller(
+        self,
+        controller_path: str,
+        method: str,
+    ) -> Callable[[dict[str, str]], bytes]:
+        """Gets the controller method handler.
+
+        Args:
+            controller_path: Dot-separated path to the controller module.
+            method: HTTP method name to execute.
+
+        Returns:
+            Controller method handler callable.
+        """
+        module = importlib.import_module(controller_path)
+
+        parts = controller_path.split(".")[-1].split("_")
+        class_name = "".join(part.capitalize() for part in parts)
+        controller_class = getattr(module, class_name, None)
+
+        if controller_class and hasattr(controller_class, method):
+            return getattr(controller_class(), method)
+
+
+        raise ValueError(f"No controller associated with controller_path: {controller_path}")
 
     def load(self) -> None:
         """Starts the HTTP server.
@@ -74,4 +115,4 @@ class PyFramework:
         Creates a Server instance and starts serving forever.
         """
         server = Server()
-        server.up(self.run_controller)
+        server.up(self.load_controller)
